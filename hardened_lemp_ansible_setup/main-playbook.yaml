@@ -1,0 +1,23 @@
+---
+- name: Hardened LEMP WordPress Setup
+  hosts: hardened_lemp_server
+  become: yes
+
+  collections:
+    - community.mysql
+
+  vars_files:
+    - group_vars/all.yaml
+
+  roles:
+    - role: common
+      tasks_from: apt_setup
+    - common
+    - firewall
+    - php
+    - mysql
+    - nginx
+    - wordpress
+    - ssl
+    - nginx
+    - fail2ban

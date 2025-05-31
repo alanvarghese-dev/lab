@@ -1,0 +1,127 @@
+---
+- name: Install MySQL Server
+  apt:
+    name: mysql-server
+    state: present
+    update_cache: no  # Cache updated by common role
+  tags: mysql
+
+- name: Create MySQL directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: 0755
+  loop:
+    - /var/run/mysqld
+    - /var/lib/mysql
+  become: true
+  tags: mysql
+
+# --- IDEMPOTENT INITIALIZATION ---
+- name: Check if MySQL already initialized
+  stat:
+    path: /var/lib/mysql/mysql
+  register: mysql_initialized
+  tags: mysql
+
+- name: Initialize MySQL only if needed
+  command: mysqld --initialize-insecure --user=mysql
+  become: true
+  when: not mysql_initialized.stat.exists
+  changed_when: true
+  tags: mysql
+
+- name: Start MySQL service
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+  tags: mysql
+
+# --- PASSWORD RESET SKIP LOGIC ---
+- name: Verify current root password
+  command: mysql -u root -p"{{ vault_mysql_root_password }}" -e "SELECT 1"
+  register: mysql_root_check
+  changed_when: false
+  no_log: true
+  ignore_errors: true
+  tags: mysql
+
+- name: Set root password only if needed
+  block:
+    - name: Wait for MySQL socket
+      wait_for:
+        path: /var/run/mysqld/mysqld.sock
+        timeout: 30
+      tags: mysql
+
+    - name: Set password via socket (primary)
+      community.mysql.mysql_user:
+        name: root
+        password: "{{ vault_mysql_root_password }}"
+        check_implicit_admin: true
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        priv: "*.*:ALL,GRANT"
+      no_log: true
+      register: set_root_password
+      ignore_errors: true
+      tags: mysql
+
+    - name: Manual password reset (fallback)
+      shell: |
+        sudo mysql -e \
+          "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password \
+          BY '{{ vault_mysql_root_password }}'; FLUSH PRIVILEGES;"
+      when: set_root_password is failed
+      no_log: true
+      tags: mysql
+  when: mysql_root_check.rc != 0  # 👈 ONLY RUN IF PASSWORD DOESN'T WORK
+  tags: mysql
+
+# --- SECURITY HARDENING (IDEMPOTENT) ---
+- name: Remove anonymous users
+  community.mysql.mysql_user:
+    name: ''
+    host_all: true
+    state: absent
+    login_user: root
+    login_password: "{{ vault_mysql_root_password }}"
+  no_log: true
+  when: mysql_root_check.rc == 0  # 👈 ONLY IF PASSWORD WORKS
+  tags: mysql
+
+- name: Remove test database
+  community.mysql.mysql_db:
+    name: test
+    state: absent
+    login_user: root
+    login_password: "{{ vault_mysql_root_password }}"
+  no_log: true
+  when: mysql_root_check.rc == 0
+  tags: mysql
+
+# --- WORDPRESS SETUP ---
+- name: Create WordPress database
+  community.mysql.mysql_db:
+    name: "{{ wp_db_name }}"
+    state: present
+    login_user: root
+    login_password: "{{ vault_mysql_root_password }}"
+  no_log: true
+  when: mysql_root_check.rc == 0
+  tags: mysql
+
+- name: Create WordPress user
+  community.mysql.mysql_user:
+    name: "{{ wp_db_user }}"
+    password: "{{ vault_wp_db_password }}"
+    priv: "{{ wp_db_name }}.*:ALL"
+    host: localhost
+    state: present
+    login_user: root
+    login_password: "{{ vault_mysql_root_password }}"
+  no_log: true
+  when: mysql_root_check.rc == 0
+  tags: mysql

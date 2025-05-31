@@ -1,0 +1,20 @@
+---
+
+domain_name: "mywordpressite.zapto.org"
+ssl_email: "alan.always4u@gmail.com"
+vault_mysql_root_password: "RootStrongPassword123!"
+
+# Unique project identifier
+project_id: "hard_infra"   
+
+wp_db_name: "{{ project_id }}_wordpress" 
+wp_db_user: "hard_infra_wpuser"            
+vault_wp_db_password: "StrongPassword123!"  
+
+# Map your existing variables to names expected by the playbook
+
+mysql_root_password: "{{ vault_mysql_root_password }}"
+wordpress_db_name: "{{ wp_db_name }}"
+wordpress_db_user: "{{ wp_db_user }}"
+wordpress_db_password: "{{ vault_wp_db_password }}"
+

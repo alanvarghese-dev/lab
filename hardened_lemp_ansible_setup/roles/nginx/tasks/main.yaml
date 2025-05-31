@@ -1,0 +1,48 @@
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: no  # Cache managed by common role
+  tags: nginx
+
+# Phase 1: Temporary HTTP-only config
+- name: Create temporary HTTP config
+  template:
+    src: http_only.conf.j2
+    dest: /etc/nginx/sites-available/wordpress
+    mode: 0644
+  notify: Reload Nginx
+  tags: nginx
+
+- name: Enable WordPress site
+  file:
+    src: /etc/nginx/sites-available/wordpress
+    dest: /etc/nginx/sites-enabled/wordpress
+    state: link
+  tags: nginx
+
+- name: Remove default Nginx config
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  tags: nginx
+
+- name: Start and enable Nginx (HTTP mode)
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  tags: nginx
+
+# Phase 2: HTTPS upgrade (runs AFTER SSL role)
+- name: Apply final HTTPS config
+  template:
+    src: wordpress_nginx.conf.j2
+    dest: /etc/nginx/sites-available/wordpress
+    mode: 0644
+  notify: Reload Nginx
+  when: 
+    - ssl_certificate_created is defined
+    - ssl_certificate_created == true
+  tags: nginx

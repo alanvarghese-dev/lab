@@ -1,0 +1,80 @@
+---
+- name: Set default web user/group
+  set_fact:
+    web_user: "www-data"
+    web_group: "www-data"
+
+- name: Get current WordPress SHA1 checksum
+  uri:
+    url: "https://wordpress.org/latest.tar.gz.sha1"
+    return_content: yes
+  register: wp_checksum_result
+  retries: 3
+  delay: 5
+  until: wp_checksum_result is succeeded
+
+- name: Set actual WordPress checksum
+  set_fact:
+    actual_wordpress_checksum: "sha1:{{ wp_checksum_result.content | trim }}"
+
+- name: Create temporary directory
+  file:
+    path: "/tmp/wp_secure_download"
+    state: directory
+    mode: 0700
+
+- name: Download WordPress
+  get_url:
+    url: "https://wordpress.org/latest.tar.gz"
+    dest: "/tmp/wp_secure_download/wordpress.tar.gz"
+    checksum: "{{ actual_wordpress_checksum }}"
+    timeout: 30
+  register: download_result
+  retries: 3
+  delay: 10
+  until: download_result is succeeded
+
+- name: Verify downloaded archive
+  stat:
+    path: "/tmp/wp_secure_download/wordpress.tar.gz"
+  register: wp_archive
+  changed_when: false
+
+- name: Validate WordPress archive
+  assert:
+    that:
+      - wp_archive.stat.exists
+      - wp_archive.stat.size > 1000000  # At least 1MB
+    msg: "WordPress download failed validation"
+
+- name: Extract WordPress
+  unarchive:
+    src: "/tmp/wp_secure_download/wordpress.tar.gz"
+    dest: "/var/www/html/"
+    remote_src: yes
+    extra_opts: "--strip-components=1"
+    owner: "{{ web_user }}"
+    group: "{{ web_group }}"
+  when: download_result is succeeded
+
+- name: Recursively set web directory permissions
+  file:
+    path: /var/www/html
+    state: directory
+    recurse: yes
+    owner: "{{ web_user }}"
+    group: "{{ web_group }}"
+    mode: '0750'
+
+- name: Configure WordPress
+  template:
+    src: wp-config.php.j2
+    dest: /var/www/html/wp-config.php
+    owner: "{{ web_user }}"
+    group: "{{ web_group }}"
+    mode: 0640
+
+- name: Secure cleanup
+  file:
+    path: "/tmp/wp_secure_download"
+    state: absent

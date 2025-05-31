@@ -1,0 +1,62 @@
+---
+
+- name: Ensure no APT locks
+  block:
+    - name: Check for existing locks
+      stat:
+        path: /var/lib/apt/lists/lock
+      register: apt_lock
+      
+    - name: Remove stale lock
+      file:
+        path: /var/lib/apt/lists/lock
+        state: absent
+      when: apt_lock.stat.exists
+      
+  always:
+    - name: Update APT cache (resilient)
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400  # 24 hours
+      register: apt_update
+      until: apt_update is succeeded
+      retries: 12
+      delay: 10  # Fixed delay value
+      ignore_errors: true
+
+- name: Install network troubleshooting tools
+  apt:
+    name:
+      - iputils-ping
+      - dnsutils
+      - net-tools
+    state: present
+  when: apt_update is failed
+
+- name: Verify network connectivity
+  command: ping -c 4 google.com
+  register: ping_test
+  changed_when: false
+  when: apt_update is failed
+
+- name: Debug network issues
+  debug:
+    msg: |
+      APT update failed! Network status:
+      - Google ping: {{ ping_test.rc == 0 | ternary('Success','Failed') }}
+      - DNS resolution: {{ lookup('dig', 'google.com') | default('Failed') }}
+  when: apt_update is failed
+
+- name: Proceed with package upgrades
+  apt:
+    upgrade: dist
+    autoremove: yes
+    autoclean: yes
+  when: apt_update is succeeded  # Only upgrade if update succeeded
+
+- name: Install Python dependencies
+  apt:
+    name:
+      - python3-pymysql
+      - python3-pip
+    state: present

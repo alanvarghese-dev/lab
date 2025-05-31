@@ -1,0 +1,32 @@
+---
+- name: Ensure SSL directory exists
+  file:
+    path: /etc/letsencrypt
+    state: directory
+  tags: ssl
+
+- name: Install Certbot and Nginx plugin
+  apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+  tags: ssl
+
+- name: Obtain Let's Encrypt SSL certificate
+  command: >
+    certbot --nginx -n --agree-tos
+    --redirect
+    --email {{ ssl_email }}
+    -d {{ domain_name }}
+  register: certbot_result
+  changed_when: "'Congratulations' in certbot_result.stdout"
+  failed_when: certbot_result.rc != 0
+  tags: ssl
+
+# Set global fact for other roles
+- name: Register SSL certificate status
+  set_fact:
+    ssl_certificate_created: true
+  when: "'Congratulations' in certbot_result.stdout"
+  tags: ssl
