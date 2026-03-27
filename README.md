@@ -2,6 +2,9 @@
 
 A comprehensive collection of software engineering projects, focusing on **DevOps**, **Infrastructure as Code (IaC)**, **Containerization**, and **Automation**. This repository showcases various implementations of web stacks (LEMP, LAMP, WordPress), CI/CD pipelines, and system administration tools.
 
+## 🏠 Home Lab & Tinkering
+This repository serves as my personal **Home Lab**. It's a space for me to tinker with new technologies, break things, fix them, and experiment with various DevOps workflows and system architectures. Most projects here are the result of curiosity and hands-on learning.
+
 ## 🚀 Key Project Categories
 
 ### ☁️ Infrastructure & Automation (Ansible/Terraform)
