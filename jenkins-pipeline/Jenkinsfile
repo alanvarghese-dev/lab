@@ -13,32 +13,46 @@ pipeline {
 
         stage('Setup Python') {
             steps {
-                sh '''
-                    set -e
+                dir('jenkins-pipeline') {
+                    sh '''
+                        set -e
 
-                    mise install
-                    mise exec -- python --version
-                '''
+                        echo "Project directory:"
+                        pwd
+
+                        echo "Mise configuration:"
+                        ls -la mise.toml
+
+                        mise install
+
+                        echo "Python:"
+                        mise exec python -- python --version
+                    '''
+                }
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    set -e
+                dir('jenkins-pipeline') {
+                    sh '''
+                        set -e
 
-                    mise exec -- python -m pip install -r requirements.txt
-                '''
+                        mise exec python -- python -m pip install -r requirements.txt
+                    '''
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh '''
-                    set -e
+                dir('jenkins-pipeline') {
+                    sh '''
+                        set -e
 
-                    mise exec -- python -m pytest
-                '''
+                        mise exec python -- python -m pytest
+                    '''
+                }
             }
         }
     }
