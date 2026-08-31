@@ -1,0 +1,5 @@
+[tools]
+"aqua:jenkins-zh/jenkins-cli" = "latest"
+python = "latest"
+java = "21"
+node = "latest"
