@@ -1,0 +1,55 @@
+pipeline {
+    agent {
+        label 'devpod'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Setup Python') {
+            steps {
+                sh '''
+                    set -e
+
+                    mise install
+                    mise exec -- python --version
+                '''
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    set -e
+
+                    mise exec -- python -m pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    set -e
+
+                    mise exec -- python -m pytest
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Python CI build successful!'
+        }
+
+        failure {
+            echo 'Python CI build failed!'
+        }
+    }
+}
