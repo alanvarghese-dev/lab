@@ -13,18 +13,17 @@ jobs:
     name: Lint and Test
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: github-actions-devpod-ci
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Install Mise
         uses: jdx/mise-action@v3
-
       - name: Install project tools
         run: mise install
-
       - name: Run Ruff
         run: ruff check .
-
       - name: Run Pytest
         run: pytest -vv
