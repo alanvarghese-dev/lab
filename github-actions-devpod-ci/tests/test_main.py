@@ -24,5 +24,3 @@ def test_divide_by_zero():
     except ValueError:
         assert True
 
-def test_ci_failure():
-    assert add(2, 2) == 5 
