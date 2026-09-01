@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'python -m pip install pytest'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'pytest -v'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'docker build -t multi-branch-pipeline-app .'
+            }
+        }
+    }
+}
