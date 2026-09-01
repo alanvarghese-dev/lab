@@ -1,0 +1,30 @@
+name: Python CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Mise
+        uses: jdx/mise-action@v3
+
+      - name: Install project tools
+        run: mise install
+
+      - name: Run Ruff
+        run: ruff check .
+
+      - name: Run Pytest
+        run: pytest -vv
