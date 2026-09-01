@@ -1,0 +1,6 @@
+[tools]
+pipx = "latest"
+python = "latest"
+ruff = "latest"
+"pipx:pytest" = "latest"
+
