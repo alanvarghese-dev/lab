@@ -1,0 +1,42 @@
+name: Automated Release Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "automated-release-pipeline/**"
+      - ".github/workflows/automated-release.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "automated-release-pipeline/**"
+      - ".github/workflows/automated-release.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: automated-release-pipeline
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Mise
+        uses: jdx/mise-action@v3
+        with:
+          cache: true
+
+      - name: Install project tools
+        run: mise install
+
+      - name: Run Ruff
+        run: mise exec -- ruff check .
+
+      - name: Run tests
+        run: mise exec -- pytest
