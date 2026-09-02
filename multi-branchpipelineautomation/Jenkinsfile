@@ -8,23 +8,48 @@ pipeline {
                 checkout scm
             }
         }
-
-        stage('Install Dependencies') {
+        stage ('Setup Python') {
             steps {
-                sh 'python -m pip install pytest'
-            }
-        }
+                dir('multi-branchpipelineautomation') {
+                    sh '''
+                        set -e 
 
+                        echo "Project directory"
+                        pwd
+
+                        echo "Mise Configuration:"
+                        ls -la mise.toml
+
+                        mise Install
+
+                        echo "Python:"
+                        mise exec python -- python --version
+                       '''
+                }
+            }    
+        }
+        
         stage('Test') {
             steps {
-                sh 'pytest -v'
+                
+                dir('multi-branchpipelineautomation') {
+                    sh '''
+
+                       'pytest -v'
+                }
             }
+        }
+    } 
+
+    post {
+        success {
+            echo "python CI build Successful!"
         }
 
-        stage('Build') {
-            steps {
-                sh 'docker build -t multi-branch-pipeline-app .'
-            }
+        failure {
+            echo "python CI build Failed!"
         }
+
+
     }
 }
