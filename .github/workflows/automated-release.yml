@@ -48,3 +48,9 @@ jobs:
             app.py \
             mise.toml \
             pytest.ini
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: automated-release-pipeline
+          path: automated-release-pipeline/dist/automated-release-pipeline.tar.gz
