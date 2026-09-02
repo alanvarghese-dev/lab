@@ -272,16 +272,6 @@ git push origin refs/tags/v1.0.0
 
 ---
 
-## 🔮 Future Enhancements
-
-- [ ] **Containerization**: Add Docker container builds and publish images to GitHub Packages (GHCR).
-- [ ] **Semantic Versioning**: Automate semantic version calculation and changelog generation using `semantic-release` or `commitizen`.
-- [ ] **Security & Vulnerability Scanning**: Integrate Trivy / Bandit for static application security testing (SAST) and dependency vulnerability scans.
-- [ ] **Multi-Environment Deployments**: Add staging and production deployment stages with automated smoke tests.
-- [ ] **Notification Alerts**: Integrate Slack/Discord webhook alerts for build and release failure notifications.
-
----
-
 ## 📄 License & Attribution
 
 Part of the **[alanvarghese-dev/lab](https://github.com/alanvarghese-dev/lab)** DevOps learning suite.
