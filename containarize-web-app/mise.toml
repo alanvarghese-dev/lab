@@ -1,0 +1,4 @@
+[tools]
+pipx = "latest"
+python = "latest"
+docker-cli = "latest"
