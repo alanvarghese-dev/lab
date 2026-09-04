@@ -307,14 +307,3 @@ When an error occurs, isolate each layer sequentially rather than changing multi
 | Check Docker daemon connection | `docker info` |
 
 ---
-
-## 🚀 Future Enhancements & Roadmap
-
-- [ ] **Production WSGI Server**: Switch from Flask's built-in development server to Gunicorn or uWSGI.
-- [ ] **Non-Root User**: Configure `USER appuser` in the Dockerfile for defense-in-depth security.
-- [ ] **Pinned Dependencies**: Specify exact package versions in `requirements.txt` (e.g., `Flask==3.0.3`).
-- [ ] **Container Healthchecks**: Add `HEALTHCHECK` directive in the Dockerfile.
-- [ ] **Multi-stage Builds**: Use multi-stage builds to further minimize final image weight.
-- [ ] **CI/CD Pipeline**: Add GitHub Actions workflow for linting, testing, and automated Docker image build/push.
-- [ ] **Docker Compose**: Orchestrate multi-container setups (e.g., Flask app + Redis / PostgreSQL).
-- [ ] **Kubernetes Deployment**: Write Kubernetes manifests (Deployments, Services, Ingress) for cluster hosting.
