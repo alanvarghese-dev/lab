@@ -1,0 +1,4 @@
+[tools]
+docker-cli = "latest"
+docker-compose = "latest"
+python = "latest"

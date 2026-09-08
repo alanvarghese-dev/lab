@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi Container App</title>
+</head>
+<body>
+    <h1>Multi-Container Docker Application</h1>
+
+    <p>Frontend container is running.</p>
+
+    <button onclick="checkBackend()">
+        Check Backend
+    </button>
+
+    <p id="result"></p>
+
+    <script>
+        async function checkBackend() {
+            const response = await fetch("http://localhost:5002/health");
+            const data = await response.json();
+
+            document.getElementById("result").textContent =
+                data.status;
+        }
+    </script>
+</body>
+</html>
