@@ -179,7 +179,6 @@ docker-image-optimization/
 ├── Dockerfile.baseline          # Unoptimized reference Dockerfile
 ├── Dockerfile.optimized         # Hardened, minimal production Dockerfile
 ├── app.py                       # Lightweight Flask service
-├── error_dock_opt_img.md        # Detailed engineering log & troubleshooting guide
 ├── mise.toml                    # Mise runtime configuration (Python & Docker CLI)
 ├── optimization.md              # Size comparison summary metrics
 ├── pytest.ini                   # Pytest test discovery configuration
