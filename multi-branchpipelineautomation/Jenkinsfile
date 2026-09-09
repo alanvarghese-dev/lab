@@ -2,54 +2,38 @@ pipeline {
     agent any
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        stage ('Setup Python') {
+
+        stage('Install Dependencies') {
             steps {
-                dir('multi-branchpipelineautomation') {
-                    sh '''
-                        set -e 
-
-                        echo "Project directory"
-                        pwd
-
-                        echo "Mise Configuration:"
-                        ls -la mise.toml
-
-                        mise Install
-
-                        echo "Python:"
-                        mise exec python -- python --version
-                       '''
-                }
-            }    
-        }
-        
-        stage('Test') {
-            steps {
-                
-                dir('multi-branchpipelineautomation') {
-                    sh '''
-
-                       'pytest -v'
-                }
+                sh 'python3 -m pip install pytest'
             }
         }
-    } 
+
+        stage('Test') {
+            steps {
+                sh 'pytest -v'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t multi-branch-pipeline-app .'
+            }
+        }
+    }
 
     post {
         success {
-            echo "python CI build Successful!"
+            echo 'Pipeline completed successfully!'
         }
 
         failure {
-            echo "python CI build Failed!"
+            echo 'Pipeline failed. Check the logs.'
         }
-
-
     }
 }
