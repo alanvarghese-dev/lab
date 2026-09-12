@@ -136,7 +136,7 @@ feature/*     └──[feature]┘          └──[merge conflict resolution
 ---
 
 ### 2. Jenkins + Ephemeral DevPod CI Agent
-> **Directory**: [`jenkins-pipeline/`](./jenkins-pipeline/) | **Documentation**: [`README.md`](./jenkins-pipeline/README.md) & [`jenkins-devpod-things-learned-and-errors.md`](./jenkins-pipeline/jenkins-devpod-things-learned-and-errors.md)
+> **Directory**: [`jenkins-pipeline/`](./jenkins-pipeline/) | **Documentation**: [`README.md`](./jenkins-pipeline/README.md) 
 
 A containerized Jenkins pipeline architecture where the **Jenkins Controller** delegates job execution over SSH to an isolated, reproducible **DevPod agent** running an Ubuntu 24.04 container managed with **Mise**.
 
@@ -196,7 +196,7 @@ An automated CI automation pipeline configured for multi-branch repositories. It
 ---
 
 ### 4. GitHub Actions CI with DevPod & Mise Toolchain
-> **Directory**: [`github-actions-devpod-ci/`](./github-actions-devpod-ci/) | **Documentation**: [`README.md`](./github-actions-devpod-ci/README.md) & [`errors.md`](./github-actions-devpod-ci/errors.md)
+> **Directory**: [`github-actions-devpod-ci/`](./github-actions-devpod-ci/) | **Documentation**: [`README.md`](./github-actions-devpod-ci/README.md) 
 
 A cloud-native Continuous Integration pipeline built with **GitHub Actions**, matching a containerized local development workflow powered by **DevPod** and **Mise**.
 
@@ -222,7 +222,7 @@ A cloud-native Continuous Integration pipeline built with **GitHub Actions**, ma
   * **Strict Quality Gates**: Automated formatting and static analysis with **Ruff**, combined with granular test suites in **pytest**.
   * **Python Path Resolution**: Solved test discovery and relative module import issues across monorepos via `pytest.ini` (`pythonpath = .`).
   * **Validated Failure Resilience**: Verified pipeline integrity by injecting deliberate assertions (`assert add(2, 2) == 5`), observing pipeline failure, and verifying automated recovery upon fix.
-  * **Systematic Post-Mortem**: Documented complete 10-step troubleshooting protocol and resolution steps in [`errors.md`](./github-actions-devpod-ci/errors.md).
+ 
 
 ---
 
@@ -257,7 +257,7 @@ flowchart TD
 ---
 
 ### 6. Containerize a Web Application
-> **Directory**: [`containarize-web-app/`](./containarize-web-app/) | **Documentation**: [`readme.md`](./containarize-web-app/readme.md) & [`what_i_learned.txt`](./containarize-web-app/what_i_learned.txt)
+> **Directory**: [`containarize-web-app/`](./containarize-web-app/) | **Documentation**: [`readme.md`](./containarize-web-app/readme.md) 
 
 A practical containerization lab transforming a lightweight Python Flask web service into an isolated, reproducible Docker container, bridging Docker client operations between DevPod and Docker Desktop on macOS.
 
@@ -290,7 +290,7 @@ flowchart TD
 ---
 
 ### 7. Docker Image Optimization & Security Hardening
-> **Directory**: [`docker-image-optimization/`](./docker-image-optimization/) | **Documentation**: [`README.md`](./docker-image-optimization/README.md) & [`error_dock_opt_img.md`](./docker-image-optimization/error_dock_opt_img.md)
+> **Directory**: [`docker-image-optimization/`](./docker-image-optimization/) | **Documentation**: [`README.md`](./docker-image-optimization/README.md)
 
 A deep-dive production engineering study on containerizing a Python/Flask web microservice. Contrasts an unoptimized baseline container with a hardened, minimal production container, achieving an **87.2% reduction in image size** and **85.4% reduction in disk usage**.
 
@@ -317,7 +317,7 @@ BASELINE (Dockerfile.baseline)       OPTIMIZED (Dockerfile.optimized)
 ---
 
 ### 8. Multi-Container Web Application (3-Tier Architecture)
-> **Directory**: [`multi-container-web-app/`](./multi-container-web-app/) | **Documentation**: [`README.md`](./multi-container-web-app/README.md) & [`things_i_learned.md`](./multi-container-web-app/things_i_learned.md)
+> **Directory**: [`multi-container-web-app/`](./multi-container-web-app/) | **Documentation**: [`README.md`](./multi-container-web-app/README.md) 
 
 A multi-tier web application orchestrated with **Docker Compose v2**, featuring an **Nginx** reverse/static frontend, a **Python Flask** REST API backend, and a **PostgreSQL 16** relational database.
 
@@ -360,7 +360,7 @@ A multi-tier web application orchestrated with **Docker Compose v2**, featuring 
 ---
 
 ### 9. Standalone Private Docker Registry v2 with TLS & Authentication
-> **Directory**: [`private-docker-registry/`](./private-docker-registry/) | **Documentation**: [`readme.md`](./private-docker-registry/readme.md) & [`error_private-dock-reg.md`](./private-docker-registry/error_private-dock-reg.md)
+> **Directory**: [`private-docker-registry/`](./private-docker-registry/) | **Documentation**: [`readme.md`](./private-docker-registry/readme.md) 
 
 A secure, standalone private Docker Registry (v2) configured with HTTPS (TLS), basic authentication (`htpasswd`), persistent Docker named volumes, and integration with containerized development environments on macOS.
 
