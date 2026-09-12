@@ -1,0 +1,21 @@
+# OS / editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Kubernetes generated/local files
+*.kubeconfig
+kubeconfig
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+
+# Local project artifacts
+tmp/
