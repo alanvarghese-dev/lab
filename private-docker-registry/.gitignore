@@ -1,0 +1,5 @@
+auth
+registry-data/
+*.key
+*.crt
+.env
