@@ -1,0 +1,5 @@
+[tools]
+docker-cli = "latest"
+kind = "latest"
+kubectl = "latest"
+python = "latest"
