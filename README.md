@@ -15,8 +15,10 @@
 [![Ruff](https://img.shields.io/badge/Linter-Ruff-E11D48)](https://docs.astral.sh/ruff/)
 [![Pytest](https://img.shields.io/badge/Testing-pytest-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/)
 [![Registry v2](https://img.shields.io/badge/Registry-Docker_v2_TLS-blue?logo=docker&logoColor=white)](https://hub.docker.com/_/registry)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.x-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![KinD](https://img.shields.io/badge/KinD-Kubernetes_in_Docker-2560E0?logo=kubernetes&logoColor=white)](https://kind.sigs.k8s.io/)
 
-Welcome to my central **DevOps & Cloud Infrastructure Homelab**! This repository serves as a hands-on proving ground and professional engineering portfolio for modern continuous integration, automated release delivery, containerization, image optimization, multi-tier microservice orchestration, private cloud registry infrastructure, reproducible development environments, and automated quality gates.
+Welcome to my central **DevOps & Cloud Infrastructure Homelab**! This repository serves as a hands-on proving ground and professional engineering portfolio for modern continuous integration, automated release delivery, containerization, image optimization, multi-tier microservice orchestration, private cloud registry infrastructure, reproducible development environments, automated quality gates, and declarative Kubernetes cluster orchestration with autoscaling.
 
 ---
 
@@ -33,6 +35,7 @@ The projects across this homelab adhere strictly to production-grade DevOps meth
 7. **Private Infrastructure & Artifact Hosting**: Deploying an on-premise private Docker Registry v2 secured by TLS certificates with Subject Alternative Names (SANs) and HTTP Basic Authentication.
 8. **Strict Quality Gates & Test Automation**: Enforcing automated static analysis ([Ruff](https://docs.astral.sh/ruff/)) and unit test suites ([pytest](https://docs.pytest.org/)) before any artifact build or merge.
 9. **Standardized Branching & Release Management**: Implementing structured Git branching models (Feature/Develop/Main) with semantic version tagging and controlled conflict resolution.
+10. **Cloud-Native Kubernetes Orchestration & Autoscaling**: Provisioning reproducible multi-node clusters on [KinD](https://kind.sigs.k8s.io/), enforcing zero-downtime rolling updates (`maxSurge` / `maxUnavailable`), configuring custom certificate SANs for nested container networking, and automating Horizontal Pod Autoscaling (HPA) driven by real-time Kubelet CPU metrics.
 
 ---
 
@@ -85,9 +88,18 @@ flowchart TD
         PrivateReg --- Auth
     end
 
+    subgraph K8s_Lab["☸️ Kubernetes Orchestration & Scaling (KinD)"]
+        direction TB
+        K8sCluster["kubernetes-cluster-setup\n(3-Node KinD: 1 CP + 2 Workers | Nginx ClusterIP)"]
+        K8sDeploy["kubernetes-deployment\n(Python HTTP Service | NodePort | host.docker.internal SANs)"]
+        K8sRollout["kubernetes-rolling-update\n(Zero-Downtime | maxSurge: 1 | maxUnavailable: 0)"]
+        K8sHPA["kubernetes-autoscaling-setup\n(Metrics Server | HPA 1-5 Replicas | 50% CPU Target)"]
+    end
+
     OptimizedDocker -->|docker push| PrivateReg
     MultiContainer -->|Persistent Volume| DBData[("postgres_data")]
     PrivateReg -->|Persistent Volume| RegData[("registry-data")]
+    DevTools -->|kind & kubectl CLI| K8s_Lab
 ```
 
 ---
@@ -105,6 +117,10 @@ flowchart TD
 | **7** | **Docker Image Optimization & Hardening** | [`docker-image-optimization/`](./docker-image-optimization/) | Docker, Python 3.12-slim, Gunicorn, Pytest | **87.2% size reduction** (442MB ➔ 56.6MB), minimal base, layer caching order, non-root `appuser`, Gunicorn | [`README.md`](./docker-image-optimization/README.md) |
 | **8** | **Multi-Container Web Application** | [`multi-container-web-app/`](./multi-container-web-app/) | Docker Compose v2, Nginx Alpine, Flask, PostgreSQL 16 | 3-tier microservice architecture, internal DNS, automated healthchecks (`pg_isready`), named volume persistence, CORS | [`README.md`](./multi-container-web-app/README.md) |
 | **9** | **Private Docker Registry v2 with TLS & Auth** | [`private-docker-registry/`](./private-docker-registry/) | Docker Registry v2, OpenSSL TLS, Compose v2, htpasswd | TLS HTTPS with SANs, Basic Auth (`htpasswd` bcrypt), Docker named volumes, credential helper isolation | [`readme.md`](./private-docker-registry/readme.md) |
+| **10** | **Kubernetes Homelab Cluster Setup** | [`kubernetes-cluster-setup/`](./kubernetes-cluster-setup/) | KinD, Kubernetes, Docker, Mise, Nginx | Multi-node cluster (1 Control-Plane, 2 Workers), Docker socket bind, ClusterIP service, cross-container networking | [`README.md`](./kubernetes-cluster-setup/README.md) |
+| **11** | **Kubernetes Deployment Lab** | [`kubernetes-deployment/`](./kubernetes-deployment/) | Kubernetes, KinD, Python, Docker, NodePort | Declarative Deployments/Services, local image loading (`kind load`), certSANs (`host.docker.internal`), rolling update & rollback | [`README.md`](./kubernetes-deployment/README.md) |
+| **12** | **Kubernetes Zero-Downtime Rolling Update** | [`kubernetes-rolling-update/`](./kubernetes-rolling-update/) | Kubernetes, KinD, Docker, Python, ClusterIP | Zero-downtime updates (`maxUnavailable: 0`, `maxSurge: 1`), ReplicaSet lifecycle, traffic continuity loop, automated rollback | [`README.md`](./kubernetes-rolling-update/README.md) |
+| **13** | **Kubernetes Horizontal Pod Autoscaler (HPA)** | [`kubernetes-autoscaling-setup/`](./kubernetes-autoscaling-setup/) | Kubernetes HPA, KinD, Metrics Server, Python | Automated scaling (1-5 replicas, 50% CPU target), Metrics Server with `--kubelet-insecure-tls`, load generation with busybox | [`README.md`](./kubernetes-autoscaling-setup/README.md) |
 
 ---
 
@@ -405,6 +421,190 @@ flowchart TD
 
 ---
 
+### 10. Kubernetes Homelab Cluster Setup
+> **Directory**: [`kubernetes-cluster-setup/`](./kubernetes-cluster-setup/) | **Documentation**: [`README.md`](./kubernetes-cluster-setup/README.md)
+
+A reproducible, declarative local multi-node Kubernetes homelab environment running on **KinD** (Kubernetes in Docker), provisioned within a **Dev Container / DevPod** development environment and managed via **Mise**.
+
+```text
++-----------------------------------------------------------------------+
+| Host Machine (macOS / Linux / Windows)                                |
+|                                                                       |
+|   +---------------------------------------------------------------+   |
+|   | Dev Container / DevPod (Ubuntu 24.04 via Docker Socket Bind)   |   |
+|   | Tooling: mise (docker-cli, kind, kubectl)                      |   |
+|   +---------------------------------------------------------------+   |
+|                                |                                      |
+|                       Docker Engine Daemon                            |
+|                                |                                      |
+|   +----------------------------+----------------------------------+   |
+|   | KinD Docker Network (kind bridge)                             |   |
+|   |                                                               |   |
+|   |  +------------------------+      +-------------------------+  |   |
+|   |  | control-plane          |      | worker-1                |  |   |
+|   |  | - kube-apiserver:6443  |      | - nginx pod replica 1   |  |   |
+|   |  | - etcd, controller-mgr |      | - nginx pod replica 2   |  |   |
+|   |  | - scheduler            |      +-------------------------+  |   |
+|   |  +------------------------+      +-------------------------+  |   |
+|   |                                  | worker-2                |  |   |
+|   |                                  | - nginx pod replica 3   |  |   |
+|   |                                  +-------------------------+  |   |
+|   +---------------------------------------------------------------+   |
++-----------------------------------------------------------------------+
+```
+
+* **Cluster Specification & Workload**:
+  * **Topology**: 1 Control-Plane node and 2 Worker nodes emulated via KinD containers defined in `kind-config.yaml`.
+  * **Sample Workload**: Multi-replica Nginx deployment (3 replicas) exposed via a `ClusterIP` Service on port 80.
+* **Key Highlights & Technical Achievements**:
+  * **Declarative Multi-Node KinD Cluster**: Created a realistic distributed multi-node cluster (`kind create cluster --config kind-config.yaml --name kubernetes-lab`) with API server bound to `0.0.0.0`.
+  * **Nested Container Orchestration**: Dev container (Ubuntu 24.04) mounts `/var/run/docker.sock`, enabling `docker-cli`, `kind`, and `kubectl` to manage clusters seamlessly from inside DevPod.
+  * **Deterministic Tooling**: Toolchain managed through `mise.toml` pinning exact versions of `docker-cli`, `kind`, and `kubectl`.
+  * **Workload Distribution & Verification**: Confirmed pod distribution across worker nodes (`kubectl get pods -o wide`) and tested end-to-end connectivity via port forwarding (`kubectl port-forward svc/nginx 8080:80`).
+  * **Layer-by-Layer Troubleshooting**: Established a 10-step diagnostic protocol covering container state, API server process, listening ports, network subnets, DNS, TLS SANs, kubeconfig contexts, and workload scheduling (documented in [`docs/errors.md`](./kubernetes-cluster-setup/docs/errors.md)).
+
+---
+
+### 11. Kubernetes Deployment Lab
+> **Directory**: [`kubernetes-deployment/`](./kubernetes-deployment/) | **Documentation**: [`README.md`](./kubernetes-deployment/README.md)
+
+An end-to-end homelab project demonstrating how to develop, containerize, deploy, and manage a Python web application on a local **kind** cluster inside a containerized development environment (**DevPod** / **Dev Containers** on Docker Desktop).
+
+```text
++-----------------------------------------------------------------------------------+
+| Host Machine (macOS / Docker Desktop)                                             |
+|                                                                                   |
+|  +--------------------------------+       +------------------------------------+  |
+|  | DevPod / Dev Container         |       | kind Cluster (Docker Container)    |  |
+|  | (Ubuntu 24.04 + mise)          |       | name: deployment-lab-control-plane |  |
+|  |                                |       |                                    |  |
+|  |  - kubectl                     |       |  +------------------------------+  |  |
+|  |  - kind CLI                    |       |  | Kubernetes API Server (:6443)|  |  |
+|  |  - docker CLI (socket mount)   | ----> |  | (certSANs:                   |  |  |
+|  |  - python / curl               |       |  |   host.docker.internal)      |  |  |
+|  +--------------------------------+       |  +------------------------------+  |  |
+|                  |                        |                 |                  |  |
+|                  | (host.docker.internal) |                 v                  |  |
+|                  +----------------------> |  +------------------------------+  |  |
+|                                           |  | Service (:80 / NodePort)     |  |  |
+|                                           |  | selector: app=k8s-deployment |  |  |
+|                                           |  +------------------------------+  |  |
+|                                           |         |              |           |  |
+|                                           |         v              v           |  |
+|                                           |    +----------+   +----------+     |  |
+|                                           |    |  Pod 1   |   |  Pod 2   |     |  |
+|                                           |    |  (:8080) |   |  (:8080) |     |  |
+|                                           |    +----------+   +----------+     |  |
+|                                           +------------------------------------+  |
++-----------------------------------------------------------------------------------+
+```
+
+* **Service Topology**:
+  * **Application**: Lightweight Python HTTP server (`app.py`) listening on `0.0.0.0:8080` packaged via `python:3.14-slim`.
+  * **Deployment**: 2 replicas configured with `imagePullPolicy: IfNotPresent` (`k8s/deployment.yaml`).
+  * **Service**: `NodePort` Service exposing port `80` targeting port `8080` on node port `30080` (`k8s/service.yaml`).
+* **Key Highlights & Technical Achievements**:
+  * **Custom Certificate SANs**: Configured `kubeadmConfigPatches` in `kind-config.yaml` to include `host.docker.internal` in API server certificate SANs, preventing TLS certificate rejection across nested DevPod containers.
+  * **Local Image Sideloading**: Sideloaded locally built Docker images (`kubernetes-deployment:1.0`) directly into kind nodes (`kind load docker-image --name deployment-lab`) to bypass external registry dependencies.
+  * **Zero-Downtime Rolling Update**: Updated application code to v2, built `kubernetes-deployment:2.0`, sideloaded image, triggered rollout via `kubectl set image`, and monitored smooth transition using `kubectl rollout status`.
+  * **Rollout History & Rollback**: Inspected deployment revisions (`kubectl rollout history`) and executed automated rollback (`kubectl rollout undo`) to instantly revert to v1 upon simulated release regression.
+  * **Cross-Boundary Networking**: Addressed port mappings and routing between macOS host, DevPod workspace container, kind control plane container, and Kubernetes Pods.
+
+---
+
+### 12. Kubernetes Zero-Downtime Rolling Update Lab
+> **Directory**: [`kubernetes-rolling-update/`](./kubernetes-rolling-update/) | **Documentation**: [`README.md`](./kubernetes-rolling-update/README.md)
+
+A practical demonstration and guide for implementing zero-downtime rolling updates and automated rollbacks on Kubernetes using **kind** (Kubernetes in Docker), Python, and modern container workflows.
+
+```text
++-----------------------------------------------------------------------------------+
+|                              Local Development Host                               |
+|                                                                                   |
+|   +--------------------+               +--------------------------------------+   |
+|   |   Docker Daemon    |               |             Kind Cluster             |   |
+|   |                    |               |        (kind-control-plane)          |   |
+|   |  rolling-update:v1 | --kind load-> |  Node Image Cache                    |   |
+|   |  rolling-update:v2 |               |                                      |   |
+|   +--------------------+               |  +--------------------------------+  |   |
+|                                        |  |   Service: rolling-update      |  |   |
+|                                        |  |        (Port 8000)             |  |   |
+|                                        |  +---------------+----------------+  |   |
+|                                        |                  |                   |   |
+|                                        |        +---------+---------+         |   |
+|                                        |        |                   |         |   |
+|                                        |        v                   v         |   |
+|                                        |  +-----------+       +-----------+   |   |
+|                                        |  | Old RS v1 |       | New RS v2 |   |   |
+|                                        |  | (Scale 0) |       | (3 Pods)  |   |   |
+|                                        |  +-----------+       +-----------+   |   |
+|                                        +--------------------------------------+   |
++-----------------------------------------------------------------------------------+
+```
+
+* **Rolling Update Mechanics**:
+  * **Strategy**: `RollingUpdate` with `maxUnavailable: 0` and `maxSurge: 1` on a 3-replica deployment.
+  * **Availability Guarantee**: `maxUnavailable: 0` ensures 100% capacity is maintained; no pod is terminated before a replacement pod is ready. `maxSurge: 1` temporarily allows at most 4 total pods (3 old + 1 new) during transitions.
+* **Key Highlights & Technical Achievements**:
+  * **ReplicaSet Lifecycle Tracking**: Tracked how Kubernetes Deployments manage underlying ReplicaSets, incrementally spinning up pods in the new ReplicaSet while terminating legacy instances (`kubectl get rs -l app=rolling-update-app -w`).
+  * **Continuous Traffic Verification (Zero Downtime)**: Executed a continuous HTTP curl loop (`while true; do curl -s http://localhost:8000; sleep 0.5; done`) while triggering a rollout from v1 to v2, proving uninterrupted response transitions without dropped requests.
+  * **Instant Automated Rollback**: Demonstrated immediate recovery to the preceding stable revision using `kubectl rollout undo deployment/rolling-update-app` (and targeted revision rollbacks via `--to-revision=1`).
+  * **Container Sideloading**: Sideloaded versioned images (`rolling-update-app:v1`, `rolling-update-app:v2`) into KinD cluster nodes, preventing `ImagePullBackOff` failures.
+  * **ClusterIP Service Decoupling**: Service dynamically routed incoming traffic across ready pods during the rollout using label selector matching (`app=rolling-update-app`).
+
+---
+
+### 13. Kubernetes Horizontal Pod Autoscaler (HPA) Setup with KinD
+> **Directory**: [`kubernetes-autoscaling-setup/`](./kubernetes-autoscaling-setup/) | **Documentation**: [`README.md`](./kubernetes-autoscaling-setup/README.md)
+
+A hands-on, reproducible local Kubernetes environment demonstrating **Horizontal Pod Autoscaling (HPA)** based on real-time CPU utilization metrics. Built on top of **KinD**, deploying a lightweight Python HTTP application, configuring Kubernetes Metrics Server, and automatically scaling workloads from 1 to 5 replicas during traffic surges.
+
+```mermaid
+flowchart TD
+    subgraph Traffic["Workload & Ingress"]
+        Client["Load Generator / Client"]
+    end
+
+    subgraph Cluster["KinD Kubernetes Cluster"]
+        SVC["Service: autoscaling-service\n(ClusterIP: 80 -> 8000)"]
+
+        subgraph Workload["Deployment: autoscaling-app"]
+            Pod1["Pod 1 (Primary)"]
+            Pod2["Pod 2 (Scaled)"]
+            PodN["Pod N (Up to 5)"]
+        end
+
+        subgraph Observability["Metrics & Autoscaling"]
+            Kubelet["Kubelet Summary API\n(Node Metrics)"]
+            MS["Metrics Server\n(--kubelet-insecure-tls)"]
+            HPA["Horizontal Pod Autoscaler\n(Target: 50% CPU)"]
+        end
+    end
+
+    Client -->|HTTP Requests| SVC
+    SVC --> Pod1
+    SVC -.-> Pod2
+    SVC -.-> PodN
+
+    Kubelet -->|Node/Pod CPU Stats| MS
+    MS -->|Custom Metrics API| HPA
+    HPA -->|Scale Up / Down Replicas| Workload
+```
+
+* **Autoscaling Specifications**:
+  * **Workload**: Python HTTP service with `/health` readiness and liveness endpoints (`app.py`, `Dockerfile`).
+  * **Resource Envelope**: Explicit CPU `requests: 100m` (HPA calculation baseline) and `limits: 500m`.
+  * **HPA Policy**: Target average CPU utilization of 50%, scaling between `minReplicas: 1` and `maxReplicas: 5` (`k8s/hpa.yaml`).
+  * **Service**: `autoscaling-service` exposing ClusterIP on port 80 routing to container port 8000 (`k8s/service.yaml`).
+* **Key Highlights & Technical Achievements**:
+  * **Metrics Server Integration**: Deployed official Metrics Server and patched deployment with `--kubelet-insecure-tls` to bypass KinD's self-signed Kubelet certificates and enable resource scraping.
+  * **Resource Requests Contract**: Enforced `resources.requests.cpu` configuration in deployment manifests, enabling the HPA controller to compute target percentages against requested resources.
+  * **Live Load Generation & Scale-Up**: Triggered real-time autoscaling by deploying an in-cluster `busybox` generator pod running continuous HTTP requests (`while true; do wget -q -O- http://autoscaling-service; done`), observing pod scale-up from 1 to 5 replicas as CPU utilization surpassed 50%.
+  * **Automated Cooldown & Scale-Down**: Verified gradual scale-down back to 1 replica following the Kubernetes stabilization window once load was terminated.
+  * **Health Probes for Safe Routing**: Configured HTTP `/health` readiness and liveness probes ensuring only healthy and initialized pods receive traffic through `autoscaling-service`.
+
+---
+
 ## 📊 Technical Comparison Matrices
 
 ### 1. CI/CD & Automation Pipelines Comparison
@@ -430,6 +630,18 @@ flowchart TD
 | **Concurrency / Server**| Flask dev server | Gunicorn WSGI | Flask + Gunicorn / Nginx proxy | Built-in Go HTTPS Registry server |
 | **Security Posture** | Default container user | Non-root `appuser` | Container network isolation | TLS HTTPS with SANs + bcrypt htpasswd |
 | **Data Persistence** | Stateless | Stateless | Named Volume (`postgres_data`) | Named Volumes (`registry-data`, `auth`, `certs`) |
+
+### 3. Kubernetes Orchestration & Scaling Comparison
+
+| Capability | Cluster Setup Lab (`kubernetes-cluster-setup`) | Deployment Lab (`kubernetes-deployment`) | Rolling Update Lab (`kubernetes-rolling-update`) | Autoscaling Lab (`kubernetes-autoscaling-setup`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Cluster Topology** | 3 Nodes (1 Control-Plane, 2 Workers) | 1 Control-Plane Node | 1 Control-Plane Node | 1 Control-Plane Node |
+| **Primary Workload** | Nginx (Alpine) | Python 3.14-slim HTTP Server | Python HTTP Server | Python HTTP Server (`/health` probe) |
+| **Service Exposure** | ClusterIP (Port 80) | NodePort (Port 80 -> 8080, NodePort 30080) | ClusterIP (Port 8000) | ClusterIP (Port 80 -> 8000) |
+| **Replica Strategy** | 3 Replicas (Static) | 2 Replicas (RollingUpdate) | 3 Replicas (`maxUnavailable: 0`, `maxSurge: 1`) | Dynamic 1-5 Replicas (HPA) |
+| **Lifecycle & Updates** | Manifest apply (`kubectl apply -f k8s/`) | `kubectl set image` & `kubectl rollout undo` | Zero-downtime surge transition & rollback | Metrics-driven scaling (50% CPU threshold) & cooldown |
+| **Observability / Testing** | `kubectl port-forward` & node scheduling | `kubectl rollout status` & revision history | Continuous curl loop & ReplicaSet watch (`kubectl get rs -w`) | Metrics Server + HPA watch (`kubectl get hpa -w`) & Busybox load pod |
+| **Networking Features** | Docker bridge network & port-forwarding | Custom `certSANs: [host.docker.internal]` | Endpoint transitions & ClusterIP routing | In-cluster service DNS (`autoscaling-service`) |
 
 ---
 
@@ -543,7 +755,7 @@ flowchart TD
 │   ├── mise.toml                              # Docker CLI & Python tool versions
 │   └── README.md                              # Multi-container stack documentation
 │
-└── private-docker-registry/                   # Project 9: Standalone Private Docker Registry v2
+├── private-docker-registry/                   # Project 9: Standalone Private Docker Registry v2
     ├── .devcontainer/                         # DevContainer setup with Docker socket passthrough
     │   ├── devcontainer.json
     │   └── Dockerfile
@@ -558,6 +770,60 @@ flowchart TD
     ├── error_private-dock-reg.md              # Real-world debugging journal
     ├── mise.toml                              # Tool version definitions
     └── readme.md                              # Step-by-step registry setup guide
+│
+├── kubernetes-cluster-setup/                  # Project 10: Declarative multi-node KinD cluster
+│   ├── .devcontainer/                         # Dev container with Docker socket bind mount
+│   │   ├── Dockerfile                         # Custom Ubuntu 24.04 environment with mise installed
+│   │   └── devcontainer.json                  # Dev container configuration with Docker socket mount
+│   ├── docs/                                  # Field guide & troubleshooting documentation
+│   │   └── errors.md                          # Field guide: errors encountered, root causes & learnings
+│   ├── k8s/                                   # Kubernetes workload manifests
+│   │   ├── deployment.yaml                    # 3-replica Nginx application deployment
+│   │   └── service.yaml                       # ClusterIP service definition routing to port 80
+│   ├── .gitignore                             # Rules ignoring logs, local kubeconfigs, and editor files
+│   ├── kind-config.yaml                       # 3-node KinD cluster topology definition (1 CP, 2 Workers)
+│   ├── mise.toml                              # Tool version configurations (docker-cli, kind, kubectl)
+│   └── README.md                              # Project documentation and quickstart guide
+│
+├── kubernetes-deployment/                     # Project 11: Application packaging & kind deployment
+│   ├── .devcontainer/                         # Dev container definition
+│   │   ├── Dockerfile                         # Ubuntu 24.04 dev base with mise
+│   │   └── devcontainer.json                  # Dev container config mounting Docker socket
+│   ├── k8s/                                   # Declarative workload specifications
+│   │   ├── deployment.yaml                    # Kubernetes Deployment (2 replicas, IfNotPresent)
+│   │   └── service.yaml                       # Kubernetes Service (NodePort, port 80 -> 8080)
+│   ├── app.py                                 # Python HTTP server (v1 / v2 endpoints)
+│   ├── Dockerfile                             # Production Dockerfile (python:3.14-slim)
+│   ├── kind-config.yaml                       # kind Cluster manifest with certSANs kubeadm patch
+│   ├── mise.toml                              # mise tool management (docker-cli, kubectl, kind, python)
+│   ├── .gitignore                             # Ignored files and directories
+│   └── README.md                              # Project documentation, rolling update & rollback guide
+│
+├── kubernetes-rolling-update/                 # Project 12: Zero-downtime rolling updates & rollbacks
+│   ├── .devcontainer/                         # Dev container environment
+│   │   ├── Dockerfile                         # Ubuntu-based dev environment with mise
+│   │   └── devcontainer.json                  # Dev Container configuration (Docker socket bind)
+│   ├── k8s/                                   # Workload manifests
+│   │   ├── deployment.yaml                    # Kubernetes Deployment manifest (strategy, replicas, probes)
+│   │   └── service.yaml                       # Kubernetes ClusterIP Service routing to pods
+│   ├── app.py                                 # Lightweight Python HTTP server
+│   ├── Dockerfile                             # Production container image for the Python app
+│   ├── mise.toml                              # Pinned tool versions (docker-cli, kind, kubectl, python)
+│   └── README.md                              # Rolling update, traffic loop & rollback guide
+│
+└── kubernetes-autoscaling-setup/              # Project 13: Horizontal Pod Autoscaler (HPA) with KinD
+    ├── .devcontainer/                         # Dev container configuration (Docker-in-Docker / DevPod ready)
+    │   ├── Dockerfile                         # Ubuntu 24.04 dev base image with mise support
+    │   └── devcontainer.json                  # Devcontainer mounts and build settings
+    ├── k8s/                                   # Kubernetes manifests
+    │   ├── deployment.yaml                    # App deployment with health probes and resource limits
+    │   ├── hpa.yaml                           # HorizontalPodAutoscaler definition (1-5 replicas, 50% CPU)
+    │   └── service.yaml                       # ClusterIP service exposing port 80 -> 8000
+    ├── app.py                                 # Lightweight Python HTTP server with /health endpoint
+    ├── Dockerfile                             # Slim container definition for the application
+    ├── kind-config.yaml                       # KinD cluster configuration with host.docker.internal SANs
+    ├── mise.toml                              # Local toolchain management (kind, kubectl, docker, ruff)
+    └── README.md                              # Project documentation, Metrics Server patch & HPA guide
 ```
 
 ---
@@ -657,6 +923,99 @@ mise exec -- pytest -vv
 
 ---
 
+### 4. Run Kubernetes Labs with KinD & kubectl
+
+#### Kubernetes Homelab Cluster Setup
+```bash
+cd kubernetes-cluster-setup
+# Create 3-node KinD cluster (1 control-plane, 2 workers)
+kind create cluster --config kind-config.yaml --name kubernetes-lab
+# Verify nodes are ready
+kubectl get nodes -o wide
+# Deploy 3-replica Nginx workload & ClusterIP service
+kubectl apply -f k8s/
+# Verify pod scheduling and test connectivity
+kubectl get pods -o wide
+kubectl port-forward svc/nginx 8080:80
+curl http://localhost:8080
+# Teardown cluster
+kind delete cluster --name kubernetes-lab
+```
+
+#### Kubernetes Deployment Lab
+```bash
+cd kubernetes-deployment
+# Create cluster with certSANs configured for host.docker.internal
+kind create cluster --name deployment-lab --config kind-config.yaml
+# Build v1 image & load directly into kind node runtime
+docker build -t kubernetes-deployment:1.0 .
+kind load docker-image kubernetes-deployment:1.0 --name deployment-lab
+# Deploy manifests (Deployment & NodePort Service)
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+# Test via port-forwarding
+kubectl port-forward service/kubernetes-deployment-service 8080:80
+curl http://localhost:8080
+# Trigger zero-downtime rolling update to v2
+docker build -t kubernetes-deployment:2.0 .
+kind load docker-image kubernetes-deployment:2.0 --name deployment-lab
+kubectl set image deployment/kubernetes-deployment app=kubernetes-deployment:2.0
+kubectl rollout status deployment/kubernetes-deployment
+# Verify rollback capability
+kubectl rollout undo deployment/kubernetes-deployment
+# Teardown cluster
+kind delete cluster --name deployment-lab
+```
+
+#### Kubernetes Zero-Downtime Rolling Update
+```bash
+cd kubernetes-rolling-update
+# Create cluster
+kind create cluster --name rolling-update
+# Build and load v1 container image
+docker build -t rolling-update-app:v1 .
+kind load docker-image rolling-update-app:v1 --name rolling-update
+# Deploy 3-replica workload with maxUnavailable: 0 and maxSurge: 1
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+# Port forward service
+kubectl port-forward service/rolling-update-service 8000:8000
+# In a second terminal: build v2, load, and perform rollout
+docker build -t rolling-update-app:v2 .
+kind load docker-image rolling-update-app:v2 --name rolling-update
+kubectl set image deployment/rolling-update-app app=rolling-update-app:v2
+kubectl rollout status deployment/rolling-update-app
+# Roll back to revision 1
+kubectl rollout undo deployment/rolling-update-app --to-revision=1
+# Teardown cluster
+kind delete cluster --name rolling-update
+```
+
+#### Kubernetes Horizontal Pod Autoscaler (HPA)
+```bash
+cd kubernetes-autoscaling-setup
+# Create cluster with certSANs
+kind create cluster --name autoscaling-demo --config kind-config.yaml
+# Deploy Metrics Server and patch for KinD insecure TLS
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch -n kube-system deployment metrics-server --type='json' -p='[
+  {"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}
+]'
+# Build and load application container image
+docker build -t kubernetes-autoscaling:1.0 .
+kind load docker-image kubernetes-autoscaling:1.0 --name autoscaling-demo
+# Deploy application, service, and HPA
+kubectl apply -f k8s/
+# Monitor HPA scaling events in real-time
+kubectl get hpa autoscaling-app -w
+# Generate traffic surge using an in-cluster busybox pod
+kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c "while true; do wget -q -O- http://autoscaling-service; done"
+# Teardown cluster
+kind delete cluster --name autoscaling-demo
+```
+
+---
+
 ## 🧭 Systematic Debugging & Troubleshooting Protocol
 
 All pipeline errors, container networking hurdles, and runtime issues encountered throughout these projects are resolved following a standardized 10-step diagnostic workflow:
@@ -687,6 +1046,10 @@ All pipeline errors, container networking hurdles, and runtime issues encountere
 | **Registry** | `x509: certificate signed by unknown authority` | Docker CLI did not trust the self-signed TLS certificate. | Installed CA certificate into `~/.docker/certs.d/host.docker.internal:5005/ca.crt`. |
 | **Registry** | macOS bind mount permission error | Docker Desktop could not share the DevPod project path. | Migrated to Docker-managed named volumes (`registry-data`, `registry-auth`, `registry-certs`). |
 | **Registry** | Credential helper "No basic auth" error | Desktop credential helper intercepted credentials for `localhost`. | Isolated Docker client config via `DOCKER_CONFIG=~/.docker-registry`. |
+| **Kubernetes / KinD** | `ErrImagePull` / `ImagePullBackOff` on Pod start | Images built on the host Docker daemon are not visible inside KinD's containerd runtime. | Loaded images directly via `kind load docker-image <img:tag> --name <cluster>` and set `imagePullPolicy: IfNotPresent`. |
+| **Kubernetes / TLS** | `x509: certificate is valid for ... not host.docker.internal` | Kubernetes API server rejected connections routed from DevPod over `host.docker.internal`. | Added `host.docker.internal` to `certSANs` via `kubeadmConfigPatches` under `apiServer` in `kind-config.yaml`. |
+| **Kubernetes / HPA** | HPA CPU metrics show `<unknown>/50%` | Metrics Server failed TLS verification against KinD nodes' self-signed Kubelet certificates. | Patched `metrics-server` deployment in `kube-system` with argument `--kubelet-insecure-tls`. |
+| **Kubernetes / Rollout** | Service capacity drops below desired replicas | Default deployment update parameters may terminate existing pods before new pods are ready. | Configured `RollingUpdate` strategy with `maxUnavailable: 0` and `maxSurge: 1` in `k8s/deployment.yaml`. |
 
 ---
 
@@ -701,7 +1064,7 @@ All pipeline errors, container networking hurdles, and runtime issues encountere
 * [x] **Docker Image Optimization & Security Hardening (87.2% Size Reduction)** (`docker-image-optimization`)
 * [x] **3-Tier Microservices Orchestration with Docker Compose & Healthchecks** (`multi-container-web-app`)
 * [x] **Standalone Private Docker Registry v2 with TLS & Authentication** (`private-docker-registry`)
-* [ ] **Kubernetes Cluster Deployments & Manifest Orchestration**
+* [x] **Kubernetes Multi-Node Clusters, Rolling Updates & HPA Autoscaling** (`kubernetes-cluster-setup`, `kubernetes-deployment`, `kubernetes-rolling-update`, `kubernetes-autoscaling-setup`)
 * [ ] **Infrastructure as Code (IaC) with Terraform**
 * [ ] **GitOps Continuous Delivery with ArgoCD / Flux**
 * [ ] **Prometheus & Grafana Observability Stack**
