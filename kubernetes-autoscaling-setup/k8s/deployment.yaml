@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaling-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaling-app
+  template:
+    metadata:
+      labels:
+        app: autoscaling-app
+    spec:
+      containers:
+        - name: autoscaling-app
+          image: kubernetes-autoscaling:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "100m"
+            limits:
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 2
+            periodSeconds: 5
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
