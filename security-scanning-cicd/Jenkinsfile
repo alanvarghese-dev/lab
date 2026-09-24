@@ -46,6 +46,11 @@ pipeline {
             steps {
                 dir('security-scanning-cicd') {
                     sh '''
+                        
+                        mkdir -p .docker
+                        printf '{"auths":{}}\\n' > .docker/config.json
+
+                        DOCKER_CONFIG="$PWD/.docker" \
                         mise exec -- trivy image \
                           --severity HIGH,CRITICAL \
                           --exit-code 1 \
