@@ -6,10 +6,25 @@ pipeline {
     stages {
 
         stage('Test') {
-            steps {
-                sh './scripts/test.sh'
-            }
-        }
+    steps {
+        sh '''
+            echo "=== Current directory ==="
+            pwd
+
+            echo "=== Workspace contents ==="
+            ls -la
+
+            echo "=== Scripts directory ==="
+            ls -la scripts/ || true
+
+            echo "=== Test script ==="
+            ls -la scripts/test.sh || true
+
+            echo "=== File type ==="
+            file scripts/test.sh || true
+        ''' 
+    }
+}
 
         stage('Security Scan') {
             steps {
