@@ -5,6 +5,17 @@ pipeline {
 
     stages {
 
+        stage('Setup Python') {
+            steps {
+                dir('security-scanning-cicd') {
+                    sh '''
+                        uv venv .venv
+                        uv pip install --python .venv/bin/python -r requirements.txt
+                    '''
+                }
+            }
+        }
+
         stage('Test') {
             steps {
                 dir('security-scanning-cicd') {
