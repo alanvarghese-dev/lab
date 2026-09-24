@@ -9,8 +9,10 @@ pipeline {
             steps {
                 dir('security-scanning-cicd') {
                     sh '''
-                        uv venv .venv
-                        uv pip install --python .venv/bin/python -r requirements.txt
+
+                       mise exec -- uv venv .venv
+                       mise exec -- uv pip install --python .venv/bin/python -r requirements.txt
+
                     '''
                 }
             }
