@@ -6,7 +6,7 @@ echo "================================="
 echo "Running Gitleaks..."
 echo "================================="
 
-gitleaks dir . --verbose
+mise exec -- gitleaks dir . --verbose
 
 echo "================================="
 echo "Security scan completed successfully."
@@ -16,7 +16,7 @@ echo "================================="
 echo "Running Semgrep..."
 echo "================================="
 
-semgrep scan \
+mise exec -- semgrep scan \
   --config security/semgrep.yml \
   .
 
@@ -28,7 +28,7 @@ echo "================================="
 echo "Running pip-audit..."
 echo "================================="
 
-pip-audit -r requirements.txt
+mise exec -- uv tool run pip-audit -r requirements.txt
 
 echo "================================="
 echo "Security scans completed."
