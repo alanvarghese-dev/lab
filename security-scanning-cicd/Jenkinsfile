@@ -9,7 +9,7 @@ pipeline {
             steps {
                 dir('security-scanning-cicd') {
                     sh '''
-
+                       rm -rf .venv
                        mise exec -- uv venv .venv
                        mise exec -- uv pip install --python .venv/bin/python -r requirements.txt
 
