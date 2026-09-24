@@ -1,0 +1,8 @@
+rules:
+  - id: python-subprocess-shell-true
+    languages:
+      - python
+    message: Avoid executing commands with shell=True on untrusted input.
+    severity: ERROR
+    mode: search
+    pattern: subprocess.$FUNC(..., shell=True, ...)

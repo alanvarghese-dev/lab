@@ -1,0 +1,8 @@
+[tools]
+python = "3.13"
+uv = "latest"
+gitleaks = "8.30.1"
+semgrep = "latest"
+trivy = "latest"
+java = "21"
+docker-cli = "latest"
