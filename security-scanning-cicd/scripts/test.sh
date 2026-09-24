@@ -6,7 +6,7 @@ echo "================================="
 echo "Running tests..."
 echo "================================="
 
-pytest -v
+.venv/bin/pytest -v
 
 echo "================================="
 echo "Tests passed."
