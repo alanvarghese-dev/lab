@@ -6,46 +6,39 @@ pipeline {
     stages {
 
         stage('Test') {
-    steps {
-        sh '''
-            echo "=== Current directory ==="
-            pwd
-
-            echo "=== Workspace contents ==="
-            ls -la
-
-            echo "=== Scripts directory ==="
-            ls -la scripts/ || true
-
-            echo "=== Test script ==="
-            ls -la scripts/test.sh || true
-
-            echo "=== File type ==="
-            file scripts/test.sh || true
-        ''' 
-    }
-}
-
-        stage('Security Scan') {
             steps {
-                sh './scripts/security-scan.sh'
+                dir('security-scanning-cicd') {
+                    sh './scripts/test.sh'
+                }
+            }
+        }
+
+        stage('Source Security Scan') {
+            steps {
+                dir('security-scanning-cicd') {
+                    sh './scripts/security-scan.sh'
+                }
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t security-scanning-cicd:${BUILD_NUMBER} .'
+                dir('security-scanning-cicd') {
+                    sh 'docker build -t security-scanning-cicd:${BUILD_NUMBER} .'
+                }
             }
         }
 
-        stage('Trivy Scan') {
+        stage('Trivy Container Scan') {
             steps {
-                sh '''
-                    trivy image \
-                      --severity HIGH,CRITICAL \
-                      --exit-code 1 \
-                      security-scanning-cicd:${BUILD_NUMBER}
-                '''
+                dir('security-scanning-cicd') {
+                    sh '''
+                        trivy image \
+                          --severity HIGH,CRITICAL \
+                          --exit-code 1 \
+                          security-scanning-cicd:${BUILD_NUMBER}
+                    '''
+                }
             }
         }
     }
