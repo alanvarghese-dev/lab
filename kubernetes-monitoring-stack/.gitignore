@@ -1,0 +1,20 @@
+# Kubernetes
+*.kubeconfig
+
+# Local environment
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.log
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Kubernetes generated files
+*.secret.yaml

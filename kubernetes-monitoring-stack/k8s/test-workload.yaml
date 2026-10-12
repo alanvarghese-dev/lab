@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-demo
+  namespace: monitoring
+  labels:
+    app: monitoring-demo
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: monitoring-demo
+
+  template:
+    metadata:
+      labels:
+        app: monitoring-demo
+
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+
+            limits:
+              cpu: 200m
+              memory: 128Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-demo
+  namespace: monitoring
+
+spec:
+  selector:
+    app: monitoring-demo
+
+  ports:
+    - port: 80
+      targetPort: 80
+
+  type: ClusterIP

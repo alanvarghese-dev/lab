@@ -1,0 +1,20 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+networking:
+  apiServerAddress: "0.0.0.0"
+  apiServerPort: 6443
+
+kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    apiServer:
+      certSANs:
+        - host.docker.internal
+
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30180
+        hostPort: 30180
+        protocol: TCP

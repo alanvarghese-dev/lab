@@ -1,0 +1,26 @@
+grafana:
+  enabled: true
+
+  service:
+    type: NodePort
+    nodePort: 30080
+
+  adminUser: admin
+
+  persistence:
+    enabled: false
+
+prometheus:
+  enabled: true
+
+  prometheusSpec:
+    retention: 7d
+
+alertmanager:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
