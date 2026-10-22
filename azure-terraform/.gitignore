@@ -1,0 +1,22 @@
+# Azure credentials
+.env.azure
+.env
+*.secret
+
+# Terraform generated files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+
+# Local Terraform overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local variable files
+terraform/*.auto.tfvars
+terraform/terraform.tfvars
